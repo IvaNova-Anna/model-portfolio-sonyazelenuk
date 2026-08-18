@@ -42,12 +42,10 @@ function setupReveal() {
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12 });
+  }, { threshold: 0, rootMargin: '0px 0px -10% 0px' });
 
   sections.forEach((el) => observer.observe(el));
 }
-
-setupReveal();
 
 const BREAKPOINTS = [
   { min: 1200, columns: 4 },
@@ -126,11 +124,18 @@ try {
 }
 setupGallery();
 
+/* Наблюдатель ставится только теперь, когда галерея уже получила реальную
+   высоту: если поставить его раньше (пока #gallery ещё пустой), первый же
+   синхронный замер IntersectionObserver может застать документ короче
+   финального и по ошибке проявить comp/booking, которые ещё не попадали
+   в кадр — а снять наблюдение он успевает раньше, чем фото лягут в разметку. */
+setupReveal();
+
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 const lightboxCounter = document.getElementById('lightbox-counter');
 let currentIndex = 0;
-let lastFocused = null;
+let lastFocusedIndex = null;
 
 function showPhoto(index) {
   currentIndex = (index + photos.length) % photos.length;
@@ -141,7 +146,10 @@ function showPhoto(index) {
 }
 
 function openLightbox(index) {
-  lastFocused = document.activeElement;
+  /* Индекс, а не сам DOM-узел: renderGallery пересоздаёт все figure при смене
+     числа колонок, и узел, сохранённый на момент открытия, к моменту закрытия
+     может быть уже отсоединён от документа. */
+  lastFocusedIndex = index;
   showPhoto(index);
   lightbox.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -151,7 +159,11 @@ function openLightbox(index) {
 function closeLightbox() {
   lightbox.hidden = true;
   document.body.style.overflow = '';
-  if (lastFocused) lastFocused.focus();
+  if (lastFocusedIndex !== null) {
+    const gallery = document.getElementById('gallery');
+    const figure = gallery.querySelector(`[data-index="${lastFocusedIndex}"]`);
+    if (figure) figure.focus();
+  }
 }
 
 document.getElementById('gallery').addEventListener('click', (event) => {
@@ -211,7 +223,9 @@ lightbox.addEventListener('touchend', (event) => {
 }, { passive: true });
 
 /* iOS Safari продолжает "резиновый" скролл страницы под фиксированным
-   оверлеем даже при overflow:hidden на body — блокируем его явно. */
+   оверлеем даже при overflow:hidden на body — блокируем его явно. Но только
+   для одного пальца: пинч-зум (два пальца и более) должен работать, это
+   единственный способ рассмотреть лицо на фото. */
 lightbox.addEventListener('touchmove', (event) => {
-  if (!lightbox.hidden) event.preventDefault();
+  if (!lightbox.hidden && event.touches.length === 1) event.preventDefault();
 }, { passive: false });
