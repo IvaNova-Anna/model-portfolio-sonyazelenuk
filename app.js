@@ -51,7 +51,7 @@ function renderGallery(photos, columns) {
     img.width = photo.w;
     img.height = photo.h;
     img.alt = `${content.name} — photo ${i + 1}`;
-    img.loading = i < 2 ? 'eager' : 'lazy';
+    img.loading = i < columns ? 'eager' : 'lazy';
     img.decoding = 'async';
 
     figure.append(img);
