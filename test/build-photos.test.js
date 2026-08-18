@@ -57,6 +57,58 @@ test('отвергает VP8X с поврежденными битами', () =>
   assert.throws(() => webpSize(buf), /повреждённый формат VP8X/);
 });
 
+test('принимает VP8X с флагом ICC (0x20)', () => {
+  // Создаём валидный VP8X заголовок с флагом ICC
+  const buf = Buffer.alloc(30);
+  buf.write('RIFF', 0);
+  buf.write('WEBP', 8);
+  buf.write('VP8X', 12);
+  buf.writeUInt32LE(10, 16); // Корректный размер чанка: 10 байт
+  buf[20] = 0x20; // Флаг ICC (валидный, не зарезервированный)
+  buf.writeUIntLE(1066, 24, 3);
+  buf.writeUIntLE(1599, 27, 3);
+  assert.deepStrictEqual(webpSize(buf), { w: 1067, h: 1600 });
+});
+
+test('принимает VP8X с флагом alpha (0x10)', () => {
+  // Создаём валидный VP8X заголовок с флагом alpha
+  const buf = Buffer.alloc(30);
+  buf.write('RIFF', 0);
+  buf.write('WEBP', 8);
+  buf.write('VP8X', 12);
+  buf.writeUInt32LE(10, 16); // Корректный размер чанка: 10 байт
+  buf[20] = 0x10; // Флаг alpha (валидный, не зарезервированный)
+  buf.writeUIntLE(1066, 24, 3);
+  buf.writeUIntLE(1599, 27, 3);
+  assert.deepStrictEqual(webpSize(buf), { w: 1067, h: 1600 });
+});
+
+test('отвергает VP8X с повреждённым битом R (0x01)', () => {
+  // Создаём VP8X заголовок с повреждённым зарезервированным битом R
+  const buf = Buffer.alloc(30);
+  buf.write('RIFF', 0);
+  buf.write('WEBP', 8);
+  buf.write('VP8X', 12);
+  buf.writeUInt32LE(10, 16); // Корректный размер чанка: 10 байт
+  buf[20] = 0x01; // Повреждённый зарезервированный бит R (бит 7)
+  buf.writeUIntLE(1066, 24, 3);
+  buf.writeUIntLE(1599, 27, 3);
+  assert.throws(() => webpSize(buf), /повреждённый формат VP8X/);
+});
+
+test('отвергает VP8X с повреждённым высоким битом (0x80)', () => {
+  // Создаём VP8X заголовок с повреждённым высоким зарезервированным битом
+  const buf = Buffer.alloc(30);
+  buf.write('RIFF', 0);
+  buf.write('WEBP', 8);
+  buf.write('VP8X', 12);
+  buf.writeUInt32LE(10, 16); // Корректный размер чанка: 10 байт
+  buf[20] = 0x80; // Повреждённый высокий зарезервированный бит (бит 0)
+  buf.writeUIntLE(1066, 24, 3);
+  buf.writeUIntLE(1599, 27, 3);
+  assert.throws(() => webpSize(buf), /повреждённый формат VP8X/);
+});
+
 test('отвергает VP8 без сигнатуры', () => {
   // Создаём VP8 заголовок с повреждённой сигнатурой
   const buf = Buffer.alloc(30);

@@ -37,8 +37,8 @@ function webpSize(buf) {
     };
   }
   if (chunk === 'VP8X') {
-    // VP8X chunk payload starts at offset 20: flags byte at offset 20, check reserved bits (bits 4-7 should be 0)
-    if (buf.length < 30 || (buf[20] & 0xf0) !== 0) {
+    // VP8X chunk payload starts at offset 20: flags byte at offset 20, check reserved bits (0x80, 0x40, 0x01 must be 0)
+    if (buf.length < 30 || (buf[20] & 0xc1) !== 0) {
       throw new Error('не WebP: повреждённый формат VP8X');
     }
     return { w: buf.readUIntLE(24, 3) + 1, h: buf.readUIntLE(27, 3) + 1 };
