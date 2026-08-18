@@ -1,6 +1,6 @@
 # Сайт-портфолио
 
-Публичная ссылка: https://<имя-сайта>.netlify.app
+Публичная ссылка: https://model-portfolio-sonyazelenuk.netlify.app
 
 ## Добавить фотографию
 
