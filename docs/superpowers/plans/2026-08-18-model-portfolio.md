@@ -333,8 +333,12 @@ test('отвергает чужой формат', () => {
 
 - [ ] **Step 2: Убедиться, что тесты падают**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: FAIL — `Cannot find module '../build-photos.js'`
+
+(Аргумент не указывается намеренно: Node 24 трактует позиционные аргументы
+`--test` как glob-шаблоны, поэтому `node --test test/` пытается выполнить сам
+каталог. Без аргументов работает автопоиск тестов.)
 
 - [ ] **Step 3: Написать генератор**
 
@@ -403,7 +407,7 @@ if (require.main === module) {
 
 - [ ] **Step 4: Убедиться, что тесты проходят**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: PASS, 3 теста
 
 - [ ] **Step 5: Собрать photos.json на реальных фото**
