@@ -1321,6 +1321,18 @@ git push -u origin main
 
 В интерфейсе Netlify: Add new site → Import from GitHub → выбрать репозиторий. Команда сборки и папка публикации подхватятся из `netlify.toml`. Задать имя сайта — оно станет поддоменом `<имя>.netlify.app`.
 
+- [ ] **Step 4a: Сделать og:image абсолютным**
+
+Как только известен адрес сайта, заменить в `index.html`:
+
+```html
+<meta property="og:image" content="https://<имя-сайта>.netlify.app/og.jpg">
+<meta property="og:url" content="https://<имя-сайта>.netlify.app/">
+```
+
+Относительный путь в `og:image` Telegram не разворачивает — превью приходит
+голой ссылкой, а это ровно главный сценарий сайта.
+
 - [ ] **Step 5: Проверить живой сайт по чек-листу**
 
 Открыть публичную ссылку **с телефона** и пройти:
