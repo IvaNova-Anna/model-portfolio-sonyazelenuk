@@ -819,6 +819,18 @@ git commit -m "feat: add masonry gallery with reserved image space"
 - Consumes: `photos` и разметку галереи из Task 5
 - Produces: `openLightbox(index)`, `closeLightbox()`, `showPhoto(index)`
 
+
+Три требования сверх базового поведения, без которых лайтбокс неполон:
+
+- карточки галереи получают `tabindex="0"` и `role="button"`, открытие по Enter
+  и Space. Без этого с клавиатуры лайтбокс не открыть вовсе, а «возврат фокуса
+  на исходное фото» бессмысленен — возвращать некуда
+- пока лайтбокс открыт, фокус не выходит за его пределы: иначе Tab уводит на
+  ссылку Telegram, спрятанную под непрозрачным слоем
+- прокрутка фона блокируется не только `overflow: hidden` на `body`, но и
+  обработчиком `touchmove` с `preventDefault`. На iOS Safari одного `overflow`
+  недостаточно, страница продолжает тянуться под оверлеем
+
 - [ ] **Step 1: Добавить разметку лайтбокса**
 
 Перед `<script>` в `index.html`:
