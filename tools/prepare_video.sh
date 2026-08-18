@@ -7,7 +7,9 @@ SRC="${1:?укажите путь к исходному видео}"
 OUT_DIR="video"
 FFMPEG="tools/bin/ffmpeg"
 TARGET_MB=6
-BITRATE_K=2900        # 15,8 с при 2900 кбит/с ≈ 5,7 МБ
+BITRATE_K=1400        # 15,8 с при 1400 кбит/с ≈ 2,7 МБ
+FPS=25                # исходник 50 к/с; для фонового зацикленного ролика это
+                      # вдвое больше нужного, а битрейт съедает ровно вдвое
 
 if [ ! -x "$FFMPEG" ]; then
   echo "Нет $FFMPEG. Скачать: curl -L -o f.zip https://evermeet.cx/ffmpeg/getrelease/zip"
@@ -22,10 +24,10 @@ trap 'rm -f "${PASSLOG}"*; [ -n "$TMP" ] && rm -rf "$TMP"' EXIT
 encode() {
   local rate="$1"
   "$FFMPEG" -y -loglevel error -i "$SRC" -an \
-    -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p \
+    -r "$FPS" -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p \
     -b:v "${rate}k" -passlogfile "$PASSLOG" -pass 1 -f mp4 /dev/null
   "$FFMPEG" -y -loglevel error -i "$SRC" -an \
-    -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p \
+    -r "$FPS" -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p \
     -b:v "${rate}k" -passlogfile "$PASSLOG" -pass 2 \
     -movflags +faststart "$OUT_DIR/hero.mp4"
 }

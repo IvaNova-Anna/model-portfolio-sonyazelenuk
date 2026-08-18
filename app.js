@@ -11,6 +11,25 @@ function fillContent() {
 
 fillContent();
 
+/* iOS блокирует автозапуск в режиме энергосбережения и во встроенных браузерах
+   мессенджеров: остаётся постер с кнопкой воспроизведения. Пробуем запустить
+   сами, а если браузер отказал — повторяем при первом касании страницы. */
+const heroVideo = document.querySelector('.hero__video');
+
+function playHero() {
+  const attempt = heroVideo.play();
+  if (attempt) attempt.catch(() => {});
+}
+
+playHero();
+
+['touchstart', 'click'].forEach((type) => {
+  document.addEventListener(type, function once() {
+    document.removeEventListener(type, once);
+    playHero();
+  }, { passive: true });
+});
+
 /** Строит список параметров из content.compCard. */
 function renderCompCard() {
   const list = document.getElementById('comp-list');

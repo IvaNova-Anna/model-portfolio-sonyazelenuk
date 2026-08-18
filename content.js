@@ -4,10 +4,10 @@ export const content = {
   telegram: 'https://t.me/sonkii_ss',
   booking: 'Available for editorial, commercial, runway and lookbook work.',
   compCard: [
-    ['Height', '188 cm'],
+    ['Height', '181 cm'],
     ['Bust', '90 cm'],
-    ['Waist', '60 cm'],
-    ['Hips', '90 cm'],
+    ['Waist', '73 cm'],
+    ['Hips', '98 cm'],
     ['Dress', 'EU 36'],
     ['Shoes', 'EU 38'],
     ['Hair', 'Brown'],
