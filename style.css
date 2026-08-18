@@ -167,3 +167,52 @@ section { padding: clamp(4rem, 12vh, 8rem) 0; }
   letter-spacing: .3em;
   margin: 0;
 }
+
+.comp__list {
+  max-width: 420px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0;
+}
+.comp__list dt,
+.comp__list dd {
+  margin: 0;
+  padding: .85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.comp__list dt {
+  color: var(--muted);
+  font-size: .72rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.comp__list dd {
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.booking { text-align: center; }
+.booking__line {
+  max-width: 30ch;
+  margin: 0 auto 2.5rem;
+  color: var(--muted);
+  font-size: 1rem;
+}
+.booking__button {
+  display: inline-block;
+  padding: 1.1rem 2.6rem;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: .72rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  transition: background .3s ease, color .3s ease;
+}
+.booking__button:hover,
+.booking__button:focus-visible {
+  background: var(--fg);
+  color: var(--bg);
+}

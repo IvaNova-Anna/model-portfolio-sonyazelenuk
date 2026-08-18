@@ -11,6 +11,21 @@ function fillContent() {
 
 fillContent();
 
+/** Строит список параметров из content.compCard. */
+function renderCompCard() {
+  const list = document.getElementById('comp-list');
+  list.innerHTML = '';
+  content.compCard.forEach(([label, value]) => {
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    list.append(dt, dd);
+  });
+}
+
+renderCompCard();
+
 const BREAKPOINTS = [
   { min: 1200, columns: 4 },
   { min: 768, columns: 3 },
