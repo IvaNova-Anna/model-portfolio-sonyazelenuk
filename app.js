@@ -26,6 +26,29 @@ function renderCompCard() {
 
 renderCompCard();
 
+/** Проявляет секции при попадании в кадр. Срабатывает один раз. */
+function setupReveal() {
+  const sections = document.querySelectorAll('.reveal');
+
+  if (!('IntersectionObserver' in window)) {
+    sections.forEach((el) => el.classList.add('is-visible'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  sections.forEach((el) => observer.observe(el));
+}
+
+setupReveal();
+
 const BREAKPOINTS = [
   { min: 1200, columns: 4 },
   { min: 768, columns: 3 },
