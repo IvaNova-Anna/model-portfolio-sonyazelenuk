@@ -78,3 +78,70 @@ function setupGallery() {
 const response = await fetch('photos.json');
 photos = await response.json();
 setupGallery();
+
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+const lightboxCounter = document.getElementById('lightbox-counter');
+let currentIndex = 0;
+let lastFocused = null;
+
+function showPhoto(index) {
+  currentIndex = (index + photos.length) % photos.length;
+  const photo = photos[currentIndex];
+  lightboxImg.src = photo.src;
+  lightboxImg.alt = `${content.name} — photo ${currentIndex + 1}`;
+  lightboxCounter.textContent = `${currentIndex + 1} / ${photos.length}`;
+}
+
+function openLightbox(index) {
+  lastFocused = document.activeElement;
+  showPhoto(index);
+  lightbox.hidden = false;
+  document.body.style.overflow = 'hidden';
+  document.getElementById('lightbox-close').focus();
+}
+
+function closeLightbox() {
+  lightbox.hidden = true;
+  document.body.style.overflow = '';
+  if (lastFocused) lastFocused.focus();
+}
+
+document.getElementById('gallery').addEventListener('click', (event) => {
+  const figure = event.target.closest('.gallery__item');
+  if (figure) openLightbox(Number(figure.dataset.index));
+});
+
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+
+lightbox.addEventListener('click', (event) => {
+  if (event.target === lightbox) closeLightbox();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (lightbox.hidden) return;
+  if (event.key === 'Escape') closeLightbox();
+  if (event.key === 'ArrowRight') showPhoto(currentIndex + 1);
+  if (event.key === 'ArrowLeft') showPhoto(currentIndex - 1);
+});
+
+/* Свайп: порог 50 px, всё что меньше — считается тапом. */
+const SWIPE = 50;
+let startX = 0;
+let startY = 0;
+
+lightbox.addEventListener('touchstart', (event) => {
+  startX = event.changedTouches[0].clientX;
+  startY = event.changedTouches[0].clientY;
+}, { passive: true });
+
+lightbox.addEventListener('touchend', (event) => {
+  const dx = event.changedTouches[0].clientX - startX;
+  const dy = event.changedTouches[0].clientY - startY;
+
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE) {
+    showPhoto(currentIndex + (dx < 0 ? 1 : -1));
+  } else if (dy > SWIPE) {
+    closeLightbox();
+  }
+}, { passive: true });
