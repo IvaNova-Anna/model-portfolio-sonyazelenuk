@@ -113,14 +113,21 @@ function setupGallery() {
   });
 }
 
+/* 5 с максимум на запрос: зависшая раздача (плохая мобильная сеть) не должна
+   держать страницу без галереи, ревила и слушателей лайтбокса бесконечно —
+   таймаут переводит зависание в ту же ветку catch, что и обычную ошибку. */
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 5000);
 try {
-  const response = await fetch('photos.json');
+  const response = await fetch('photos.json', { signal: controller.signal });
   if (!response.ok) {
     throw new Error(`photos.json: HTTP ${response.status}`);
   }
   photos = await response.json();
 } catch (err) {
   console.error('Failed to load photos.json — gallery will be empty.', err);
+} finally {
+  clearTimeout(timeout);
 }
 setupGallery();
 
