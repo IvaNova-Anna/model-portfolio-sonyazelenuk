@@ -440,7 +440,7 @@ git commit -m "feat: generate photos.json with frame sizes"
 
 ```bash
 mkdir -p fonts
-UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
 for FAM in "Cormorant+Garamond:wght@300" "Playfair+Display:wght@400" "Prata" "Tenor+Sans"; do
   URL=$(curl -sL -A "$UA" "https://fonts.googleapis.com/css2?family=${FAM}&display=swap" \
         | awk '/^\/\* latin \*\//{f=1} f && /src:/{print; exit}' \
@@ -583,7 +583,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 30%;
+  object-position: center 15%;
 }
 .hero__overlay {
   position: absolute;
@@ -657,7 +657,12 @@ fillContent();
 - [ ] **Step 6: Проверить в браузере**
 
 Run: `python3 -m http.server 8000` и открыть `http://localhost:8000`
-Expected: видео играет на весь экран, имя из `content.js` поверх, город под ним, тёмный фон. Проверить в окне 375 px и на десктопе: лицо модели не уходит за границу кадра — если уходит, подобрать `object-position` (например `center 20%`).
+Expected: видео играет на весь экран, имя из `content.js` поверх, город под ним,
+тёмный фон. Проверить в окне 375 px и на десктопе.
+
+Значение `object-position: center 15%` подобрано по кадрам ролика: при 30% и 20%
+в части планов голова уходила выше видимой полосы. На телефоне подрезка идёт по
+бокам, поэтому вертикальное смещение там ни на что не влияет.
 
 - [ ] **Step 7: Выбрать шрифт для имени**
 
