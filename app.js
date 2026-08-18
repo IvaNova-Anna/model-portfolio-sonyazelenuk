@@ -115,8 +115,15 @@ function setupGallery() {
   });
 }
 
-const response = await fetch('photos.json');
-photos = await response.json();
+try {
+  const response = await fetch('photos.json');
+  if (!response.ok) {
+    throw new Error(`photos.json: HTTP ${response.status}`);
+  }
+  photos = await response.json();
+} catch (err) {
+  console.error('Failed to load photos.json — gallery will be empty.', err);
+}
 setupGallery();
 
 const lightbox = document.getElementById('lightbox');
