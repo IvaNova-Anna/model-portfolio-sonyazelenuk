@@ -45,6 +45,8 @@ function renderGallery(photos, columns) {
     const figure = document.createElement('figure');
     figure.className = 'gallery__item';
     figure.dataset.index = i;
+    figure.tabIndex = 0;
+    figure.setAttribute('role', 'button');
 
     const img = document.createElement('img');
     img.src = photo.src;
@@ -112,6 +114,17 @@ document.getElementById('gallery').addEventListener('click', (event) => {
   if (figure) openLightbox(Number(figure.dataset.index));
 });
 
+document.getElementById('gallery').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const figure = event.target.closest('.gallery__item');
+  if (!figure) return;
+  /* preventDefault для обоих клавиш: Space иначе прокрутит страницу, а Enter
+     иначе доиграет своё "нажатие" уже на кнопке закрытия (фокус на неё
+     переходит внутри openLightbox), закрыв лайтбокс тем же кликом. */
+  event.preventDefault();
+  openLightbox(Number(figure.dataset.index));
+});
+
 document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
 
 lightbox.addEventListener('click', (event) => {
@@ -123,6 +136,12 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeLightbox();
   if (event.key === 'ArrowRight') showPhoto(currentIndex + 1);
   if (event.key === 'ArrowLeft') showPhoto(currentIndex - 1);
+  if (event.key === 'Tab') {
+    /* Единственный интерактивный элемент внутри — кнопка закрытия,
+       поэтому фокус просто удерживается на ней. */
+    event.preventDefault();
+    document.getElementById('lightbox-close').focus();
+  }
 });
 
 /* Свайп: порог 50 px, всё что меньше — считается тапом. */
@@ -145,3 +164,9 @@ lightbox.addEventListener('touchend', (event) => {
     closeLightbox();
   }
 }, { passive: true });
+
+/* iOS Safari продолжает "резиновый" скролл страницы под фиксированным
+   оверлеем даже при overflow:hidden на body — блокируем его явно. */
+lightbox.addEventListener('touchmove', (event) => {
+  if (!lightbox.hidden) event.preventDefault();
+}, { passive: false });

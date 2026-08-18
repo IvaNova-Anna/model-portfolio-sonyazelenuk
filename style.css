@@ -123,6 +123,10 @@ section { padding: clamp(4rem, 12vh, 8rem) 0; }
   transition: opacity .4s ease;
 }
 .gallery__item:hover img { opacity: .82; }
+.gallery__item:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
 
 .lightbox {
   position: fixed;
