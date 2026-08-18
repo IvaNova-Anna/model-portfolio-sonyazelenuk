@@ -16,16 +16,22 @@ fi
 
 mkdir -p "$OUT_DIR"
 PASSLOG=$(mktemp -t ffpass)
+TMP=""
+trap 'rm -f "${PASSLOG}"*; [ -n "$TMP" ] && rm -rf "$TMP"' EXIT
 
 encode() {
   local rate="$1"
   "$FFMPEG" -y -loglevel error -i "$SRC" -an \
-    -c:v libx264 -preset slow -profile:v high -level 4.0 -pix_fmt yuv420p \
+    -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p \
     -b:v "${rate}k" -passlogfile "$PASSLOG" -pass 1 -f mp4 /dev/null
   "$FFMPEG" -y -loglevel error -i "$SRC" -an \
-    -c:v libx264 -preset slow -profile:v high -level 4.0 -pix_fmt yuv420p \
+    -c:v libx264 -preset slow -profile:v high -pix_fmt yuv420p \
     -b:v "${rate}k" -passlogfile "$PASSLOG" -pass 2 \
     -movflags +faststart "$OUT_DIR/hero.mp4"
+}
+
+size_mb() {
+  awk -v b="$1" 'BEGIN { printf "%.1f", b / 1024 / 1024 }'
 }
 
 echo "Кодирую при ${BITRATE_K} кбит/с, два прохода..."
@@ -35,13 +41,16 @@ SIZE=$(stat -f%z "$OUT_DIR/hero.mp4")
 # Если промахнулись мимо бюджета — пересчитать битрейт по факту и повторить.
 if [ "$SIZE" -gt $((TARGET_MB * 1024 * 1024)) ]; then
   NEW=$((BITRATE_K * TARGET_MB * 1024 * 1024 / SIZE * 95 / 100))
-  echo "Вышло $((SIZE / 1024 / 1024)) МБ, повторяю при ${NEW} кбит/с..."
+  echo "Вышло $(size_mb "$SIZE") МБ, повторяю при ${NEW} кбит/с..."
   encode "$NEW"
   SIZE=$(stat -f%z "$OUT_DIR/hero.mp4")
 fi
 
-rm -f "${PASSLOG}"*
-echo "Итог: $((SIZE / 1024 / 1024)) МБ"
+if [ "$SIZE" -gt $((TARGET_MB * 1024 * 1024)) ]; then
+  echo "ОШИБКА: итог $(size_mb "$SIZE") МБ — превышает бюджет ${TARGET_MB} МБ" >&2
+  exit 1
+fi
+echo "Итог: $(size_mb "$SIZE") МБ"
 
 echo "Достаю постер-кадр с 4-й секунды..."
 TMP=$(mktemp -d)
@@ -51,6 +60,5 @@ from PIL import Image
 Image.open('$TMP/frame.png').convert('RGB').save(
     '$OUT_DIR/poster.webp', 'WEBP', quality=80, method=6)
 "
-rm -rf "$TMP"
 
 ls -la "$OUT_DIR"
