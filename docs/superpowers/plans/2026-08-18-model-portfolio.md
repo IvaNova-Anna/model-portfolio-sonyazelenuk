@@ -12,7 +12,9 @@
 
 - Язык всего контента сайта — **только английский**
 - Контакты — **только Telegram**, телефон не публикуется
-- Видео: H.264 MP4, **≤6 МБ**, длительность ≤15 с, без звука на слух (`muted`)
+- Видео: H.264 MP4, **≤6 МБ**, без звуковой дорожки. Отдельного лимита на
+  длительность нет: он вводился как средство уложиться в вес, а ffmpeg держит
+  бюджет при полной длине ролика (решение владельца, 2026-08-18)
 - Фото: WebP, длинная сторона 1600 px, качество 82, ожидаемо 200–400 КБ
 - Никаких сторонних библиотек в браузере и никаких npm-зависимостей
 - Mobile-first: обязательная проверка в окне шириной **375 px**
@@ -177,9 +179,15 @@ git commit -m "feat: add photo compression tool and generate gallery webp"
 - Output: `video/hero.mp4`, `video/poster.webp`
 
 **Interfaces:**
-- Produces: `video/hero.mp4` (1080×1920, ≤6 МБ), `video/poster.webp` (первый кадр, 1080×1920)
+- Produces: `video/hero.mp4` (1080×1920, ≤6 МБ, без звуковой дорожки), `video/poster.webp` (кадр из видео)
 
-Здесь нет юнит-тестов: инструмент — обёртка над системными утилитами, проверка идёт по факту размера и разрешения выходных файлов.
+Кодировщик — статический `ffmpeg` в `tools/bin/ffmpeg` (git-ignored, скачан отдельно).
+Системный `avconvert` для этой задачи не годится: он даёт только фиксированные
+пресеты без управления битрейтом, и минимальный подходящий пресет выдавал 19 МБ
+при лимите 6 МБ.
+
+Юнит-тестов нет: инструмент — обёртка над кодировщиком, проверка по факту
+размера, разрешения и длительности выходных файлов.
 
 - [ ] **Step 1: Написать скрипт**
 
@@ -193,35 +201,51 @@ set -euo pipefail
 
 SRC="${1:?укажите путь к исходному видео}"
 OUT_DIR="video"
-LIMIT_BYTES=$((6 * 1024 * 1024))
+FFMPEG="tools/bin/ffmpeg"
+TARGET_MB=6
+BITRATE_K=2900        # 15,8 с при 2900 кбит/с ≈ 5,7 МБ
 
-mkdir -p "$OUT_DIR"
-
-echo "Кодирую 1080p, двухпроходно..."
-avconvert --source "$SRC" --output "$OUT_DIR/hero.mp4" \
-  --preset Preset1920x1080 --multiPass --replace --progress
-
-SIZE=$(stat -f%z "$OUT_DIR/hero.mp4")
-echo "Размер: $((SIZE / 1024 / 1024)) MB"
-
-if [ "$SIZE" -gt "$LIMIT_BYTES" ]; then
-  echo "Больше 6 МБ — пересобираю в 720p..."
-  avconvert --source "$SRC" --output "$OUT_DIR/hero.mp4" \
-    --preset Preset1280x720 --multiPass --replace --progress
-  SIZE=$(stat -f%z "$OUT_DIR/hero.mp4")
-  echo "Размер: $((SIZE / 1024 / 1024)) MB"
+if [ ! -x "$FFMPEG" ]; then
+  echo "Нет $FFMPEG. Скачать: curl -L -o f.zip https://evermeet.cx/ffmpeg/getrelease/zip"
+  exit 1
 fi
 
-echo "Достаю постер-кадр..."
+mkdir -p "$OUT_DIR"
+PASSLOG=$(mktemp -t ffpass)
+
+encode() {
+  local rate="$1"
+  "$FFMPEG" -y -loglevel error -i "$SRC" -an \
+    -c:v libx264 -preset slow -profile:v high -level 4.0 -pix_fmt yuv420p \
+    -b:v "${rate}k" -passlogfile "$PASSLOG" -pass 1 -f mp4 /dev/null
+  "$FFMPEG" -y -loglevel error -i "$SRC" -an \
+    -c:v libx264 -preset slow -profile:v high -level 4.0 -pix_fmt yuv420p \
+    -b:v "${rate}k" -passlogfile "$PASSLOG" -pass 2 \
+    -movflags +faststart "$OUT_DIR/hero.mp4"
+}
+
+echo "Кодирую при ${BITRATE_K} кбит/с, два прохода..."
+encode "$BITRATE_K"
+SIZE=$(stat -f%z "$OUT_DIR/hero.mp4")
+
+# Если промахнулись мимо бюджета — пересчитать битрейт по факту и повторить.
+if [ "$SIZE" -gt $((TARGET_MB * 1024 * 1024)) ]; then
+  NEW=$((BITRATE_K * TARGET_MB * 1024 * 1024 / SIZE * 95 / 100))
+  echo "Вышло $((SIZE / 1024 / 1024)) МБ, повторяю при ${NEW} кбит/с..."
+  encode "$NEW"
+  SIZE=$(stat -f%z "$OUT_DIR/hero.mp4")
+fi
+
+rm -f "${PASSLOG}"*
+echo "Итог: $((SIZE / 1024 / 1024)) МБ"
+
+echo "Достаю постер-кадр с первой секунды..."
 TMP=$(mktemp -d)
-qlmanage -t -s 1920 -o "$TMP" "$OUT_DIR/hero.mp4" >/dev/null 2>&1
+"$FFMPEG" -y -loglevel error -ss 1 -i "$OUT_DIR/hero.mp4" -frames:v 1 "$TMP/frame.png"
 python3 -c "
-import glob, sys
 from PIL import Image
-src = glob.glob('$TMP/*.png')
-if not src:
-    sys.exit('qlmanage не отдал кадр — сними стоп-кадр вручную в QuickTime')
-Image.open(src[0]).convert('RGB').save('$OUT_DIR/poster.webp', 'WEBP', quality=80, method=6)
+Image.open('$TMP/frame.png').convert('RGB').save(
+    '$OUT_DIR/poster.webp', 'WEBP', quality=80, method=6)
 "
 rm -rf "$TMP"
 
@@ -231,17 +255,18 @@ ls -la "$OUT_DIR"
 - [ ] **Step 2: Запустить**
 
 Run: `bash tools/prepare_video.sh "media files/showreel.mp4"`
-Expected: `video/hero.mp4` и `video/poster.webp` созданы, размер видео выведен в мегабайтах
+Expected: два прохода кодирования, затем строка `Итог: 5 МБ` (или другое число ≤6), затем постер
 
 - [ ] **Step 3: Проверить результат**
 
-Run: `mdls -name kMDItemPixelWidth -name kMDItemPixelHeight -name kMDItemDurationSeconds video/hero.mp4 && ls -la video/`
-Expected: 1080×1920 (или 720×1280 при откате), длительность ~15,8 с, `hero.mp4` ≤ 6 МБ, `poster.webp` существует
+Run: `tools/bin/ffmpeg -hide_banner -i video/hero.mp4 2>&1 | grep -E "Duration|Stream" && ls -la video/`
+Expected: `Duration: 00:00:15.78` (полная длина исходника), одна видеодорожка
+`h264 … 1080x1920`, **звуковой дорожки нет**, `hero.mp4` ≤ 6 МБ
 
 - [ ] **Step 4: Посмотреть постер глазами**
 
-Run: `open video/poster.webp`
-Expected: осмысленный кадр с моделью, не чёрный и не смазанный. Если кадр неудачный — открыть видео в QuickTime, встать на нужную секунду, `⌘C`, вставить в Просмотр, сохранить PNG и перегнать в WebP тем же однострочником на Pillow.
+Открыть `video/poster.webp` инструментом чтения файлов.
+Expected: осмысленный кадр с моделью — не чёрный, не пустой, не смазанный. Если кадр неудачный, поменять `-ss 1` на другую секунду и перезапустить.
 
 - [ ] **Step 5: Коммит**
 
@@ -308,8 +333,12 @@ test('отвергает чужой формат', () => {
 
 - [ ] **Step 2: Убедиться, что тесты падают**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: FAIL — `Cannot find module '../build-photos.js'`
+
+(Аргумент не указывается намеренно: Node 24 трактует позиционные аргументы
+`--test` как glob-шаблоны, поэтому `node --test test/` пытается выполнить сам
+каталог. Без аргументов работает автопоиск тестов.)
 
 - [ ] **Step 3: Написать генератор**
 
@@ -378,7 +407,7 @@ if (require.main === module) {
 
 - [ ] **Step 4: Убедиться, что тесты проходят**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: PASS, 3 теста
 
 - [ ] **Step 5: Собрать photos.json на реальных фото**
@@ -411,7 +440,7 @@ git commit -m "feat: generate photos.json with frame sizes"
 
 ```bash
 mkdir -p fonts
-UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
 for FAM in "Cormorant+Garamond:wght@300" "Playfair+Display:wght@400" "Prata" "Tenor+Sans"; do
   URL=$(curl -sL -A "$UA" "https://fonts.googleapis.com/css2?family=${FAM}&display=swap" \
         | awk '/^\/\* latin \*\//{f=1} f && /src:/{print; exit}' \
@@ -554,7 +583,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 30%;
+  object-position: center 15%;
 }
 .hero__overlay {
   position: absolute;
@@ -628,7 +657,12 @@ fillContent();
 - [ ] **Step 6: Проверить в браузере**
 
 Run: `python3 -m http.server 8000` и открыть `http://localhost:8000`
-Expected: видео играет на весь экран, имя из `content.js` поверх, город под ним, тёмный фон. Проверить в окне 375 px и на десктопе: лицо модели не уходит за границу кадра — если уходит, подобрать `object-position` (например `center 20%`).
+Expected: видео играет на весь экран, имя из `content.js` поверх, город под ним,
+тёмный фон. Проверить в окне 375 px и на десктопе.
+
+Значение `object-position: center 15%` подобрано по кадрам ролика: при 30% и 20%
+в части планов голова уходила выше видимой полосы. На телефоне подрезка идёт по
+бокам, поэтому вертикальное смещение там ни на что не влияет.
 
 - [ ] **Step 7: Выбрать шрифт для имени**
 
@@ -701,7 +735,7 @@ function renderGallery(photos, columns) {
     img.width = photo.w;
     img.height = photo.h;
     img.alt = `${content.name} — photo ${i + 1}`;
-    img.loading = i < 2 ? 'eager' : 'lazy';
+    img.loading = i < columns ? 'eager' : 'lazy';
     img.decoding = 'async';
 
     figure.append(img);
@@ -784,6 +818,18 @@ git commit -m "feat: add masonry gallery with reserved image space"
 **Interfaces:**
 - Consumes: `photos` и разметку галереи из Task 5
 - Produces: `openLightbox(index)`, `closeLightbox()`, `showPhoto(index)`
+
+
+Три требования сверх базового поведения, без которых лайтбокс неполон:
+
+- карточки галереи получают `tabindex="0"` и `role="button"`, открытие по Enter
+  и Space. Без этого с клавиатуры лайтбокс не открыть вовсе, а «возврат фокуса
+  на исходное фото» бессмысленен — возвращать некуда
+- пока лайтбокс открыт, фокус не выходит за его пределы: иначе Tab уводит на
+  ссылку Telegram, спрятанную под непрозрачным слоем
+- прокрутка фона блокируется не только `overflow: hidden` на `body`, но и
+  обработчиком `touchmove` с `preventDefault`. На iOS Safari одного `overflow`
+  недостаточно, страница продолжает тянуться под оверлеем
 
 - [ ] **Step 1: Добавить разметку лайтбокса**
 
@@ -1274,6 +1320,18 @@ git push -u origin main
 - [ ] **Step 4: Подключить Netlify**
 
 В интерфейсе Netlify: Add new site → Import from GitHub → выбрать репозиторий. Команда сборки и папка публикации подхватятся из `netlify.toml`. Задать имя сайта — оно станет поддоменом `<имя>.netlify.app`.
+
+- [ ] **Step 4a: Сделать og:image абсолютным**
+
+Как только известен адрес сайта, заменить в `index.html`:
+
+```html
+<meta property="og:image" content="https://<имя-сайта>.netlify.app/og.jpg">
+<meta property="og:url" content="https://<имя-сайта>.netlify.app/">
+```
+
+Относительный путь в `og:image` Telegram не разворачивает — превью приходит
+голой ссылкой, а это ровно главный сценарий сайта.
 
 - [ ] **Step 5: Проверить живой сайт по чек-листу**
 

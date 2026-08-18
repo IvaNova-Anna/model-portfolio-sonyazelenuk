@@ -1,0 +1,234 @@
+/* --- Шрифты ------------------------------------------------------------ */
+@font-face {
+  font-family: 'Display';
+  src: url('fonts/cormorant-garamond.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Body';
+  src: url('fonts/tenor-sans.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* --- Палитра ----------------------------------------------------------- */
+:root {
+  --bg: #0a0a0a;
+  --fg: #f2f0ec;
+  --muted: #8a8580;
+  --line: #232323;
+  --font-display: 'Display', Georgia, serif;
+  --font-body: 'Body', system-ui, sans-serif;
+  --gap: 12px;
+  --pad: 24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Hero -------------------------------------------------------------- */
+.hero {
+  position: relative;
+  height: 100svh;
+  min-height: 480px;
+  overflow: hidden;
+}
+.hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 15%;
+}
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.1) 45%, rgba(10,10,10,.85) 100%);
+}
+.hero__caption {
+  position: absolute;
+  inset: auto 0 12vh 0;
+  text-align: center;
+  padding: 0 var(--pad);
+}
+.hero__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.75rem, 13vw, 7rem);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+.hero__city {
+  margin: 1.1em 0 0;
+  font-size: .72rem;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Общее для секций -------------------------------------------------- */
+main { padding: 0 var(--pad); max-width: 1400px; margin: 0 auto; }
+.section-title {
+  font-family: var(--font-body);
+  font-size: .72rem;
+  font-weight: 400;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  margin: 0 0 2.5rem;
+}
+section { padding: clamp(4rem, 12vh, 8rem) 0; }
+.footer {
+  padding: 3rem var(--pad) 4rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: .68rem;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--line);
+}
+
+.gallery {
+  display: flex;
+  gap: var(--gap);
+  align-items: flex-start;
+}
+.gallery__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+}
+.gallery__item { margin: 0; cursor: zoom-in; }
+.gallery__item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #141414;
+  transition: opacity .4s ease;
+}
+.gallery__item:hover img { opacity: .82; }
+.gallery__item:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(6, 6, 6, .97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 2vw;
+}
+.lightbox[hidden] { display: none; }
+.lightbox__img {
+  max-width: 100%;
+  max-height: 92vh;
+  object-fit: contain;
+}
+.lightbox__close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: 0;
+  color: var(--fg);
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+.lightbox__counter {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: .68rem;
+  letter-spacing: .3em;
+  margin: 0;
+}
+
+.comp__list {
+  max-width: 420px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0;
+}
+.comp__list dt,
+.comp__list dd {
+  margin: 0;
+  padding: .85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.comp__list dt {
+  color: var(--muted);
+  font-size: .72rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.comp__list dd {
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.booking { text-align: center; }
+.booking__line {
+  max-width: 30ch;
+  margin: 0 auto 2.5rem;
+  color: var(--muted);
+  font-size: 1rem;
+}
+.booking__button {
+  display: inline-block;
+  padding: 1.1rem 2.6rem;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: .72rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  transition: background .3s ease, color .3s ease;
+}
+.booking__button:hover,
+.booking__button:focus-visible {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .gallery__item img { transition: none; }
+  .booking__button { transition: none; }
+}
