@@ -8,12 +8,22 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
+<!-- og:image и og:url обязаны быть абсолютными: по относительному пути
+     краулеры мессенджеров картинку не находят и кэшируют пустое превью.
+     Ширина и высота нужны WhatsApp и LinkedIn — без них они рисуют
+     маленькую карточку со значком вместо большой обложки. -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Sonya Zelenuk">
 <meta property="og:title" content="Sonya Zelenuk">
 <meta property="og:description" content="Model portfolio — photos, measurements and booking.">
 <meta property="og:image" content="https://model-portfolio-sonyazelenuk.netlify.app/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sonya Zelenuk">
 <meta property="og:url" content="https://model-portfolio-sonyazelenuk.netlify.app/">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://model-portfolio-sonyazelenuk.netlify.app/og.jpg">
 <link rel="stylesheet" href="style.css">
 <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 </head>
